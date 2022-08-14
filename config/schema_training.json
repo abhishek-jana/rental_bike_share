@@ -1,0 +1,20 @@
+{
+    "SampleFileName": "202207-capitalbikeshare-tripdata.csv",
+    "LengthOfDateStampInFile": 6,
+    "NumberofColumns": 15,
+    "ColName": {
+        "ride_id": "object",
+        "rideable_type": "object",
+        "started_at": "object",
+        "ended_at": "object",
+        "start_station_name": "object",
+        "start_station_id": "float64",
+        "end_station_name": "object",
+        "end_station_id": "float64",
+        "start_lat": "float64",
+        "start_lng": "float64",
+        "end_lat": "float64",
+        "end_lng": "float64",
+        "member_casual": "object"
+    }
+}
