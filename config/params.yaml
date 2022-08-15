@@ -6,7 +6,7 @@ base:
 
 config:
   params: config/params.yaml
-  schema_training: config/schema_training.jsom
+  schema_training: config/schema_training.json
   schema_prediction: config/schema_prediction.json
 
 cloud_provider:

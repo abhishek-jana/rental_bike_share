@@ -1,7 +1,8 @@
 {
     "SampleFileName": "202207-capitalbikeshare-tripdata.csv",
     "LengthOfDateStampInFile": 6,
-    "NumberofColumns": 15,
+    "LengthOfTimeStampInFile": 0,
+    "NumberofColumns": 12,
     "ColName": {
         "ride_id": "object",
         "rideable_type": "object",

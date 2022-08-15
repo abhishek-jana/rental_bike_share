@@ -36,9 +36,11 @@ def values_from_schema_function(schema_path):
 
         pattern = schema['SampleFileName']
         length_of_date_stamp_in_file = schema['LengthOfDateStampInFile']
+        length_of_time_stamp_in_file = schema['LengthOfTimeStampInFile']
         column_names = schema['ColName']
         number_of_columns = schema['NumberofColumns']
-        return pattern, length_of_date_stamp_in_file, column_names, number_of_columns
+        return pattern, length_of_date_stamp_in_file, length_of_time_stamp_in_file,\
+            column_names, number_of_columns
 
     except ValueError:
         raise ValueError
