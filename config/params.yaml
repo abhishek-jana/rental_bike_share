@@ -16,6 +16,7 @@ cloud_provider:
 data_download:
   cloud_training_directory_path: raw_data/training_batch_files/
   cloud_prediction_directory_path: raw_data/prediction_batch_files/
+  no_of_files: 24
   core_data_url: https://s3.amazonaws.com/capitalbikeshare-data/
   weather_data_url:
 

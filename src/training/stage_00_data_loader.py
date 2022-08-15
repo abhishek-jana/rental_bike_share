@@ -29,7 +29,7 @@ def loader_main(config_path, enable_logging=True, execution_id=None, executed_by
         downloader_url = config['data_download']['core_data_url']
         downloader_path = config['data_download']['cloud_training_directory_path']
         download_path = config['data_source']['Training_Batch_Files']
-
+        no_of_files = config["data_download"]["no_of_files"]
         logger.log(
             "Configuration detail has been fetched from configuration file.")
 
@@ -54,7 +54,7 @@ def loader_main(config_path, enable_logging=True, execution_id=None, executed_by
         else:
             download_files_from_urls(page_url=downloader_url,
                                      destination_download_path=downloader_path,
-                                     no_of_files=24, logger=logger,
+                                     no_of_files=no_of_files, logger=logger,
                                      enable_logging=enable_logging)
             logger.log("Download completed. Downloaded files will be extracted")
             extract_all_zip_to_csv_file(source_files_path=downloader_path,
