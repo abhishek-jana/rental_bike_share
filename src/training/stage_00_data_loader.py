@@ -1,12 +1,13 @@
+import os
+import shutil
+import sys
+import argparse
+
 from src.utility import get_logger_object_of_training, read_params
 from src.utility import clean_data_source_dir, download_files_from_urls
 from src.utility import extract_all_zip_to_csv_file
 from webapp.exception_layer.generic_exception.generic_exception import GenericException
 
-import os
-import shutil
-import sys
-import argparse
 
 LOG_COLLECTION_NAME = "data_loader"
 

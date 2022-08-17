@@ -57,18 +57,31 @@ log_database:
 
 dataset:
   unwanted_column:
-    - 
-    - 
-    - 
-    - 
+    - ride_id
+    - rideable_type
+    - start_station_name
+    - start_station_id
+    - end_station_name
+    - end_station_id
+    - end_lat
+    - end_lng
+    - start_lat
+    - start_lng
+    - started_at
+    - ended_at
+
+  convert_to_datetime:
+    - started_at
 
 
   database_detail:
     training_database_name: bikeshare_training
     prediction_database_name: bikeshare_prediction
-    dataset_training_collection_name: bikeshare_training_dataset
-    dataset_prediction_collection_name: bikeshare_prediction_dataset
+    dataset_daily_training_collection_name: bikeshare_daily_training_dataset
+    dataset_daily_prediction_collection_name: bikeshare_daily_prediction_dataset
+    dataset_hourly_training_collection_name: bikeshare_hour_training_dataset
+    dataset_hourly_training_collection_name: bikeshare_hour_training_dataset
 
 target_columns:
   columns:
-    - Calories
+    - member_casual

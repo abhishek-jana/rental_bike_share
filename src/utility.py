@@ -134,7 +134,7 @@ def download_files_from_urls(page_url, destination_download_path,
                 f"{no_of_files} file(s) are downloaded from {page_url} to \
                 {destination_download_path}.")
         else:
-            for file_link in file_links[-no_of_files+1:-1]:
+            for file_link in file_links[-no_of_files:]:
                 logger.log(f"Most recent {no_of_files} file(s) will be downloaded \
                     from {page_url} to {destination_download_path}.")
 
