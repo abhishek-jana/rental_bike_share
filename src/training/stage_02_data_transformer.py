@@ -346,6 +346,66 @@ class DataTransformer:
             raise Exception(
                 generic_exception.error_message_detail(str(e), sys)) from e
 
+    def get_hourly_weather(date):
+        try:
+
+            url = f"https://i-weather.com/weather/washington/history/daily-history/?gid=4140963&date={date}&station=19064&language=english&country=us-united-states"
+
+            r = requests.get(url, headers={
+                             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"})
+            soup = BeautifulSoup(r.text, 'html.parser')
+
+            weather = soup.find('table', class_="daily-history")
+
+            rows = weather.findAll('tr')
+
+            date = []
+            minTemp = []
+            maxTemp = []
+            maxSteadyWind = []
+            maxWindGust = []
+            precipitation = []
+            snowDepth = []
+            pressure = []
+            icon = []
+            description = []
+
+            for row in rows:
+                cells = row.findAll("td")
+                if len(cells) > 0:
+                    date.append(pd.to_datetime(cells[0].text))
+                    minTemp.append(cells[1].text)
+                    maxTemp.append(cells[2].text)
+                    maxSteadyWind.append(cells[3].text)
+                    maxWindGust.append(cells[4].text)
+                    precipitation.append(cells[5].text)
+                    snowDepth.append(cells[6].text)
+                    pressure.append(cells[7].text)
+                    icon.append(cells[8].span.attrs['data-icon']
+                                if cells[8].span else None)
+                    description.append(cells[9].find('span', "details").text)
+
+            data = {
+                "date": date,
+                "temperature": minTemp,
+                "rel_tmperature": maxTemp,
+                "wind": maxSteadyWind,
+                "wind_gust": maxWindGust,
+                "rel_humidity": precipitation,
+                "dew_point": snowDepth,
+                "pressure": pressure,
+                "icon": icon,
+                "description": description
+            }
+            return pd.DataFrame(data, columns=data.keys())
+        except Exception as e:
+            generic_exception = GenericException(
+                "Error occurred in module [{0}] class [{1}] method [{2}]"
+                .format(self.__module__, DataTransformer.__name__, self.get_hourly_weather.__name__)
+            )
+            raise Exception(
+                generic_exception.error_message_detail(str(e), sys)) from e
+
     def clean_weather_data(self, input_df):
         """
         takes the weather df and cleans it into
