@@ -11,6 +11,9 @@ from webapp.exception_layer.generic_exception.generic_exception import GenericEx
 
 LOG_COLLECTION_NAME = "data_transformer"
 
+# Todo
+# function for hour_df to merge weather data with hour data
+
 
 class DataTransformer:
     """
