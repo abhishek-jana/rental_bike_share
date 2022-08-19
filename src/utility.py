@@ -9,6 +9,31 @@ import yaml
 import importlib
 import json
 import zipfile
+import random
+
+
+def get_free_proxies():
+    url = "https://free-proxy-list.net/"
+    soup = BeautifulSoup(requests.get(url).content, 'html.parser')
+    proxies = []
+    for row in soup.find('table', attrs={'id': 'proxylisttable'}).find_all('tr')[1:]:
+        tds = row.find_all('td')
+        try:
+            ip = tds[0].text.strip()
+            port = tds[1].text.strip()
+            host = f"{ip}:{port}"
+            proxies.append(host)
+        except IndexError:
+            continue
+    return proxies
+
+
+def get_session():
+    proxies = get_free_proxies()
+    session = requests.Session()
+    proxy = random.choice((proxies))
+    session.proxies = {'http': proxy, 'https': proxy}
+    return session
 
 
 def read_params(config_path: str) -> dict:
