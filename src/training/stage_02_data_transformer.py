@@ -267,8 +267,10 @@ class DataTransformer:
         try:
             # 1: winter; 2: spring; 3: summer; 4: autumn
             season = df_with_day_month_column["month"] % 12 // 3 + 1
-            season.loc[(df_with_day_month_column["month"].isin((3, 6, 9, 12))) &
-                       (df_with_day_month_column["day"] < 21) & (df_with_day_month_column['week'] < 48)] -= 1
+            season.loc[(df_with_day_month_column["month"].isin((3, 6, 9))) &
+                       (df_with_day_month_column["day"] < 21)] -= 1
+            season.loc[(df_with_day_month_column["month"].isin(([12]))) &
+                       (df_with_day_month_column["day"] < 21)] = 4
 
             df_with_day_month_column["season"] = season
 
