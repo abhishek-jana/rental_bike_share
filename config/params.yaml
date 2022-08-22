@@ -73,6 +73,47 @@ dataset:
   convert_to_datetime:
     - started_at
 
+  day:
+    categorical:
+      - dayofweek
+      - holiday
+      - day
+      - week
+      - month
+      - season
+      - weather_condition
+      - windgust_info
+      - precipitation_info
+    numerical:
+      - minTemp
+      - maxTemp
+      - maxSteadyWind
+      - precipitation
+      - pressure
+    log_transform:
+      - maxSteadyWind
+
+  hour:
+    categorical:
+      - hour
+      - dayofweek
+      - holiday
+      - day
+      - week
+      - month
+      - season
+      - icon
+      - wind_dir_deg
+    numerical:
+      - temperature
+      - rel_temperature
+      - rel_humidity
+      - dew_point
+      - pressure
+      - wind_speed
+    log_transform:
+      - member_casual
+      - wind_speed
 
   database_detail:
     training_database_name: bikeshare_training

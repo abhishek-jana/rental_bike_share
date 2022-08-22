@@ -60,7 +60,7 @@ class DataPreProcessing:
             raise Exception(
                 generic_exception.error_message_detail(str(e), sys)) from e
 
-    def scale_data(self, data, path, scalar_file_name, is_dataframe_format_required=False, is_new_scaling=True):
+    def scale_data(self, data, path, scalar_file_name, columns, is_dataframe_format_required=False, is_new_scaling=True):
         """
         data: dataframe to perform scaling
         path: path to save scaler object
@@ -69,22 +69,26 @@ class DataPreProcessing:
         is_new_scaling: default it will create new scaling object and perform transformation.
         if it is false it will load scaler object from mentioned path paramter
         """
+        self.logger.log(
+            f'Cteating standard scaling on {columns} columns.')
         try:
             path = os.path.join(path)
             if not is_new_scaling:
                 if os.path.exists(path):
                     scaler = joblib.load(os.path.join(path, scalar_file_name))
-                    output = scaler.transform(data)
+                    output = scaler.transform(data[columns])
                 else:
                     raise Exception(
                         f"Scaler object is not found at path: {path}")
             else:
                 scaler = StandardScaler()
-                output = scaler.fit_transform(data)
+                output = scaler.fit_transform(data[columns])
                 create_directory_path(path)
                 joblib.dump(scaler, os.path.join(path, scalar_file_name))
             if is_dataframe_format_required:
-                output = pd.DataFrame(output, columns=data.columns)
+                output = pd.DataFrame(output, columns=columns)
+            self.logger.log(
+                f'Finished cteating standard scaling on {columns} columns.')
             return output
         except Exception as e:
             generic_exception = GenericException(
@@ -94,7 +98,63 @@ class DataPreProcessing:
             raise Exception(
                 generic_exception.error_message_detail(str(e), sys)) from e
 
-    def is_null_present(self, data, null_value_path):
+    def one_hot_encoder(self, df, columns):
+        """
+        create one hot encoder
+
+        Args:
+            df (df): pandas df
+            columns (list): list of categorical columns
+
+        Raises:
+            Exception: generic error
+
+        Returns:
+            df: one hot encoded df
+        """
+        self.logger.log(
+            f'Cteating one hot encoding on {columns} columns.')
+        try:
+            cat_data = pd.get_dummies(
+                df[columns], columns=columns, drop_first=True)
+            self.logger.log(
+                f'Finished one hot encoding on {columns} columns.')
+            return cat_data
+        except Exception as e:
+            generic_exception = GenericException(
+                "Error occurred in module [{0}] class [{1}] method [{2}]"
+                .format(self.__module__, DataPreProcessing.__name__,
+                        self.one_hot_encoder.__name__))
+            raise Exception(
+                generic_exception.error_message_detail(str(e), sys)) from e
+
+    def join_dataframe(self, df1, df2):
+        """
+        join two pandas df
+
+        Args:
+            df1 (df): pandas df
+            df2 (df): pandas df
+
+        Raises:
+            Exception: generic error
+
+        Returns:
+            df: joined df
+        """
+        try:
+            df1.reset_index(drop=True, inplace=True)
+            df2.reset_index(drop=True, inplace=True)
+            return pd.concat([df1, df2], axis=1)
+        except Exception as e:
+            generic_exception = GenericException(
+                "Error occurred in module [{0}] class [{1}] method [{2}]"
+                .format(self.__module__, DataPreProcessing.__name__,
+                        self.join_dataframe.__name__))
+            raise Exception(
+                generic_exception.error_message_detail(str(e), sys)) from e
+
+    def is_null_present(self, data, null_value_path, filename):
         """
         checks for null value and saves a df in a folder containing null value info
 
@@ -124,7 +184,7 @@ class DataPreProcessing:
                     null_counts)
                 create_directory_path(null_value_path)
                 dataframe_with_null.to_csv(os.path.join(
-                    null_value_path, "null_values.csv"))
+                    null_value_path, filename))
                 # storing the null column information to file
             self.logger.log("Finding missing values is a success.Data written to the null values file. Exited the "
                             "is_null_present method of the Preprocessor class")
@@ -332,9 +392,9 @@ class DataPreProcessing:
             f'Started splitting -precipitation- column into categories.')
         try:
             condition = [df["precipitation"] == 0,
-                         (df["precipitation"] > 0) & (
-                df["precipitation"] < 5),
-                df["precipitation"] > 5]
+                         (df["precipitation"] > 0) &
+                         (df["precipitation"] < 5),
+                         df["precipitation"] > 5]
             value = ['no', 'medium', 'severe']
             df['precipitation_info'] = np.select(condition, value)
             self.logger.log(
@@ -345,6 +405,34 @@ class DataPreProcessing:
                 "Error occurred in module [{0}] class [{1}] method [{2}]"
                 .format(self.__module__, DataPreProcessing.__name__,
                         self.create_precipitation_info.__name__))
+            raise Exception(
+                generic_exception.error_message_detail(str(e), sys)) from e
+
+    def impute_wind_dir_deg(self, df):
+        """
+        custom imputation on wind_dir_degree from hour df
+
+        Args:
+            df (df): pandas df
+
+        Raises:
+            Exception: generic error
+
+        Returns:
+            df: pandas df after imputation with category value closest to nan
+        """
+        try:
+            test_df = abs(df.groupby(['wind_dir_deg'])['member_casual'].mean() -
+                          df['member_casual'][df["wind_dir_deg"].isna()].mean()).reset_index()
+            value = test_df['wind_dir_deg'][test_df.member_casual ==
+                                            test_df.member_casual.min()].values[0]
+            df['wind_dir_deg'].fillna(value=value, inplace=True)
+            return df
+        except Exception as e:
+            generic_exception = GenericException(
+                "Error occurred in module [{0}] class [{1}] method [{2}]"
+                .format(self.__module__, DataPreProcessing.__name__,
+                        self.impute_wind_dir_deg.__name__))
             raise Exception(
                 generic_exception.error_message_detail(str(e), sys)) from e
 
@@ -432,6 +520,14 @@ class ModelTrainer:
             self.target_columns = self.config['target_columns']['columns']
             self.null_value_file_path = self.config["artifacts"]["training_data"]["null_value_info_file_path"]
             self.scaler_path = self.config['artifacts']['training_data']['scaler_path']
+
+            self.categorical_cols_hour = self.config["dataset"]["hour"]["categorical"]
+            self.numerical_cols_hour = self.config["dataset"]["hour"]["numerical"]
+            self.log_transform_hour = self.config["dataset"]["hour"]["log_transform"]
+            self.categorical_cols_day = self.config["dataset"]["day"]["categorical"]
+            self.numerical_cols_day = self.config["dataset"]["day"]["numerical"]
+            self.log_transform_day = self.config["dataset"]["day"]["log_transform"]
+
         except Exception as e:
             generic_exception = GenericException(
                 "Error occurred in module [{0}] class [{1}] method [{2}]"
@@ -462,16 +558,43 @@ class ModelTrainer:
             data_frame_hour, data_frame_day = self.get_dataframe()
             preprocess = DataPreProcessing(logger=self.logger,
                                            enable_logging=self.logger.enable_logging)
-            input_features_hour, target_features_hour = data_frame_hour.drop(
-                self.target_columns, axis=1), data_frame_hour.drop[self.target_columns]
+
             input_features_day, target_features_day = data_frame_day.drop(
-                self.target_columns, axis=1), data_frame_day.drop[self.target_columns]
+                self.target_columns, axis=1), data_frame_day[self.target_columns]
 
             # hour data
+            is_null_present_hour = preprocess.is_null_present(
+                data_frame_hour, self.null_value_file_path, "null_values_hour.csv")
+            if is_null_present_hour:
+                hour_cols = ['temperature', 'rel_temperature', 'rel_humidity',
+                             'dew_point', 'pressure', 'icon', 'description']
+                data_frame_hour = data_frame_hour.dropna(
+                    subset=hour_cols)
+                data_frame_hour = preprocess.impute_missing_values_median(
+                    data_frame_hour, ['wind_speed'])
+                data_frame_hour = preprocess.log_transform(
+                    df=data_frame_hour, columns=self.log_transform_hour)
+                data_frame_hour = preprocess.impute_wind_dir_deg(
+                    data_frame_hour)
 
+            input_features_hour, target_features_hour = data_frame_hour.drop(
+                self.target_columns, axis=1), data_frame_hour[self.target_columns]
+            input_features_hour = preprocess.drop_columns_with_all_missing_value(
+                input_features_hour)
+            input_features_hour = preprocess.remove_columns(
+                input_features_hour, ['date', 'year', 'description'])
+
+            input_features_hour_numerical = preprocess.scale_data(data=input_features_hour, path=self.scaler_path,
+                                                                  scalar_file_name='scalar_hour.sav',
+                                                                  columns=self.numerical_cols_hour,
+                                                                  is_dataframe_format_required=True)
+            input_features_hour_categorical = preprocess.one_hot_encoder(df=input_features_hour,
+                                                                         columns=self.categorical_cols_hour)
+            input_features_hour = preprocess.join_dataframe(input_features_hour_categorical,
+                                                            input_features_hour_numerical)
             # day data
             is_null_present_day = preprocess.is_null_present(
-                input_features_day, self.null_value_file_path)
+                input_features_day, self.null_value_file_path, "null_values_day.csv")
             if is_null_present_day:
                 input_features_day = preprocess.impute_missing_values_KNN(
                     input_features_day, ['minTemp', 'maxTemp', 'precipitation'])
@@ -492,10 +615,15 @@ class ModelTrainer:
             input_features_day = preprocess.remove_columns(
                 input_features_day, ['date', 'year'])
             input_features_day = preprocess.log_transform(
-                df=input_features_day, columns=['maxSteadyWind'])
-            input_features_day = preprocess.scale_data(data=input_features_day, path=self.scaler_path,
-                                                       scalar_file_name='scalar_day.sav',
-                                                       is_dataframe_format_required=True)
+                df=input_features_day, columns=self.log_transform_day)
+            input_features_day_numerical = preprocess.scale_data(data=input_features_day, path=self.scaler_path,
+                                                                 scalar_file_name='scalar_day.sav',
+                                                                 columns=self.numerical_cols_day,
+                                                                 is_dataframe_format_required=True)
+            input_features_day_categorical = preprocess.one_hot_encoder(df=input_features_day,
+                                                                        columns=self.categorical_cols_day)
+            input_features_day = preprocess.join_dataframe(input_features_day_categorical,
+                                                           input_features_day_numerical)
             return input_features_hour, target_features_hour, input_features_day, target_features_day
         except Exception as e:
             generic_exception = GenericException(
@@ -506,23 +634,34 @@ class ModelTrainer:
                 generic_exception.error_message_detail(str(e), sys)) from e
 
 
-# def preprocess_main(config_path, enable_logging=True, execution_id=None, executed_by=None):
-#     try:
-#         logger = get_logger_object_of_training(config_path=config_path,
-#                                                collection_name=LOG_COLLECTION_NAME,
-#                                                execution_id=execution_id,
-#                                                executed_by=executed_by)
-#         logger.enable_logging = enable_logging
+def preprocess_main(config_path, enable_logging=True, execution_id=None, executed_by=None):
+    try:
+        logger = get_logger_object_of_training(config_path=config_path,
+                                               collection_name=LOG_COLLECTION_NAME,
+                                               execution_id=execution_id,
+                                               executed_by=executed_by)
+        logger.enable_logging = enable_logging
 
-#         config = read_params(config_path)
-#         data_preprocessor = DataPreProcessing(config=config, logger=logger,
-#                                               enable_logging=enable_logging)
-#         logger.log('Start of Data Preprocessing on input_day.csv file')
+        config = read_params(config_path)
+        logger.log('Start of Data Preprocessing on input_day.csv file')
+        data_preprocessor = ModelTrainer(config=config, logger=logger,
+                                         enable_logging=enable_logging)
+        X_hour, y_hour, X_day, y_day = data_preprocessor.data_preperation()
+        print(X_hour.head(), y_hour.head())
+        print(X_hour.isna().sum())
+    except Exception as e:
+        generic_exception = GenericException(
+            "Error occurred in module [{0}] method [{1}]"
+            .format(preprocess_main.__module__,
+                    preprocess_main.__name__))
+        raise Exception(
+            generic_exception.error_message_detail(str(e), sys)) from e
 
-#     except Exception as e:
-#         generic_exception = GenericException(
-#             "Error occurred in module [{0}] method [{1}]"
-#             .format(preprocess_main.__module__,
-#                     preprocess_main.__name__))
-#         raise Exception(
-#             generic_exception.error_message_detail(str(e), sys)) from e
+
+if __name__ == '__main__':
+    args = argparse.ArgumentParser()
+    args.add_argument(
+        "--config", default=os.path.join("config", "params.yaml"))
+    parsed_args = args.parse_args()
+    print(parsed_args.config)
+    preprocess_main(config_path=parsed_args.config)
