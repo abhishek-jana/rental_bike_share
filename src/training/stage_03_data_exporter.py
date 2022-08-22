@@ -15,7 +15,7 @@ class DataExporter:
         try:
             self.config = config
             self.logger = logger
-            self.enable_logging = enable_logging
+            self.logger.enable_logging = enable_logging
             self.mongo_db = MongoDBOperation()
             self.dataset_database = self.config["dataset"]["database_detail"]["training_database_name"]
             self.dataset_daily_collection_name = self.config["dataset"][
