@@ -60,7 +60,7 @@ class DataPreProcessing:
             raise Exception(
                 generic_exception.error_message_detail(str(e), sys)) from e
 
-    def scale_data(self, data, path, scalar_file_name, columns, is_dataframe_format_required=False, is_new_scaling=True):
+    def scale_data(self, data, path, scaler_file_name, columns, is_dataframe_format_required=False, is_new_scaling=True):
         """
         data: dataframe to perform scaling
         path: path to save scaler object
@@ -75,7 +75,7 @@ class DataPreProcessing:
             path = os.path.join(path)
             if not is_new_scaling:
                 if os.path.exists(path):
-                    scaler = joblib.load(os.path.join(path, scalar_file_name))
+                    scaler = joblib.load(os.path.join(path, scaler_file_name))
                     output = scaler.transform(data[columns])
                 else:
                     raise Exception(
@@ -84,7 +84,7 @@ class DataPreProcessing:
                 scaler = StandardScaler()
                 output = scaler.fit_transform(data[columns])
                 create_directory_path(path)
-                joblib.dump(scaler, os.path.join(path, scalar_file_name))
+                joblib.dump(scaler, os.path.join(path, scaler_file_name))
             if is_dataframe_format_required:
                 output = pd.DataFrame(output, columns=columns)
             self.logger.log(
@@ -585,7 +585,7 @@ class ModelTrainer:
                 input_features_hour, ['date', 'year', 'description'])
 
             input_features_hour_numerical = preprocess.scale_data(data=input_features_hour, path=self.scaler_path,
-                                                                  scalar_file_name='scalar_hour.sav',
+                                                                  scaler_file_name='scaler_hour.sav',
                                                                   columns=self.numerical_cols_hour,
                                                                   is_dataframe_format_required=True)
             input_features_hour_categorical = preprocess.one_hot_encoder(df=input_features_hour,
@@ -617,7 +617,7 @@ class ModelTrainer:
             input_features_day = preprocess.log_transform(
                 df=input_features_day, columns=self.log_transform_day)
             input_features_day_numerical = preprocess.scale_data(data=input_features_day, path=self.scaler_path,
-                                                                 scalar_file_name='scalar_day.sav',
+                                                                 scaler_file_name='scaler_day.sav',
                                                                  columns=self.numerical_cols_day,
                                                                  is_dataframe_format_required=True)
             input_features_day_categorical = preprocess.one_hot_encoder(df=input_features_day,
@@ -649,6 +649,7 @@ def preprocess_main(config_path, enable_logging=True, execution_id=None, execute
         X_hour, y_hour, X_day, y_day = data_preprocessor.data_preperation()
         print(X_hour.head(), y_hour.head())
         print(X_hour.isna().sum())
+        print(X_day.head())
     except Exception as e:
         generic_exception = GenericException(
             "Error occurred in module [{0}] method [{1}]"
