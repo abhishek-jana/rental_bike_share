@@ -83,7 +83,7 @@ class DataPreProcessing:
             else:
                 scaler = StandardScaler()
                 output = scaler.fit_transform(data[columns])
-                create_directory_path(path)
+                create_directory_path(path, recreate=False)
                 joblib.dump(scaler, os.path.join(path, scaler_file_name))
             if is_dataframe_format_required:
                 output = pd.DataFrame(output, columns=columns)
@@ -182,7 +182,7 @@ class DataPreProcessing:
                 dataframe_with_null['columns'] = data.columns
                 dataframe_with_null['missing_values_count'] = np.asarray(
                     null_counts)
-                create_directory_path(null_value_path)
+                create_directory_path(null_value_path, recreate=False)
                 dataframe_with_null.to_csv(os.path.join(
                     null_value_path, filename))
                 # storing the null column information to file
